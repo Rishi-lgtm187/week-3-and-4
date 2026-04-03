@@ -1,128 +1,110 @@
 import java.util.Arrays;
+import java.util.Random;
 
-class Trade {
-    String id;
-    int volume;
+class Asset {
+    String name;
+    double returnRate;   // in percentage
+    double volatility;   // risk measure
 
-    public Trade(String id, int volume) {
-        this.id = id;
-        this.volume = volume;
+    public Asset(String name, double returnRate, double volatility) {
+        this.name = name;
+        this.returnRate = returnRate;
+        this.volatility = volatility;
     }
 
     @Override
     public String toString() {
-        return id + ":" + volume;
+        return name + ":" + returnRate + "%";
     }
 }
 
 public class questions {
 
-    // Merge Sort (ascending by volume)
-    public static void mergeSort(Trade[] trades, int left, int right) {
+    // Merge Sort ascending by returnRate (stable)
+    public static void mergeSort(Asset[] assets, int left, int right) {
         if (left < right) {
             int mid = (left + right) / 2;
-            mergeSort(trades, left, mid);
-            mergeSort(trades, mid + 1, right);
-            merge(trades, left, mid, right);
+            mergeSort(assets, left, mid);
+            mergeSort(assets, mid + 1, right);
+            merge(assets, left, mid, right);
         }
     }
 
-    private static void merge(Trade[] trades, int left, int mid, int right) {
+    private static void merge(Asset[] assets, int left, int mid, int right) {
         int n1 = mid - left + 1;
         int n2 = right - mid;
 
-        Trade[] L = new Trade[n1];
-        Trade[] R = new Trade[n2];
+        Asset[] L = new Asset[n1];
+        Asset[] R = new Asset[n2];
 
-        for (int i = 0; i < n1; i++) L[i] = trades[left + i];
-        for (int j = 0; j < n2; j++) R[j] = trades[mid + 1 + j];
+        for (int i = 0; i < n1; i++) L[i] = assets[left + i];
+        for (int j = 0; j < n2; j++) R[j] = assets[mid + 1 + j];
 
         int i = 0, j = 0, k = left;
         while (i < n1 && j < n2) {
-            if (L[i].volume <= R[j].volume) {
-                trades[k++] = L[i++];
+            if (L[i].returnRate <= R[j].returnRate) {
+                assets[k++] = L[i++];
             } else {
-                trades[k++] = R[j++];
+                assets[k++] = R[j++];
             }
         }
-        while (i < n1) trades[k++] = L[i++];
-        while (j < n2) trades[k++] = R[j++];
+        while (i < n1) assets[k++] = L[i++];
+        while (j < n2) assets[k++] = R[j++];
     }
 
-    // Quick Sort (descending by volume)
-    public static void quickSort(Trade[] trades, int low, int high) {
+    // Quick Sort descending by returnRate, tie-breaker volatility ASC
+    public static void quickSort(Asset[] assets, int low, int high) {
         if (low < high) {
-            int pi = partition(trades, low, high);
-            quickSort(trades, low, pi - 1);
-            quickSort(trades, pi + 1, high);
+            int pi = partition(assets, low, high);
+            quickSort(assets, low, pi - 1);
+            quickSort(assets, pi + 1, high);
         }
     }
 
-    private static int partition(Trade[] trades, int low, int high) {
-        int pivot = trades[high].volume; // Lomuto partition
+    private static int partition(Asset[] assets, int low, int high) {
+        // Pivot selection: median-of-3 strategy
+        int mid = (low + high) / 2;
+        double pivotValue = medianOfThree(assets[low].returnRate, assets[mid].returnRate, assets[high].returnRate);
+        double pivot = pivotValue;
+
         int i = low - 1;
         for (int j = low; j < high; j++) {
-            if (trades[j].volume >= pivot) { // descending
+            if (assets[j].returnRate > pivot ||
+                    (assets[j].returnRate == pivot && assets[j].volatility < assets[high].volatility)) {
                 i++;
-                Trade temp = trades[i];
-                trades[i] = trades[j];
-                trades[j] = temp;
+                Asset temp = assets[i];
+                assets[i] = assets[j];
+                assets[j] = temp;
             }
         }
-        Trade temp = trades[i + 1];
-        trades[i + 1] = trades[high];
-        trades[high] = temp;
+        Asset temp = assets[i + 1];
+        assets[i + 1] = assets[high];
+        assets[high] = temp;
         return i + 1;
     }
 
-    // Merge two sorted arrays
-    public static Trade[] mergeTwoLists(Trade[] morning, Trade[] afternoon) {
-        Trade[] merged = new Trade[morning.length + afternoon.length];
-        int i = 0, j = 0, k = 0;
-        while (i < morning.length && j < afternoon.length) {
-            if (morning[i].volume <= afternoon[j].volume) {
-                merged[k++] = morning[i++];
-            } else {
-                merged[k++] = afternoon[j++];
-            }
-        }
-        while (i < morning.length) merged[k++] = morning[i++];
-        while (j < afternoon.length) merged[k++] = afternoon[j++];
-        return merged;
-    }
-
-    // Compute total volume
-    public static int computeTotal(Trade[] trades) {
-        int total = 0;
-        for (Trade t : trades) total += t.volume;
-        return total;
+    private static double medianOfThree(double a, double b, double c) {
+        if ((a > b) != (a > c)) return a;
+        else if ((b > a) != (b > c)) return b;
+        else return c;
     }
 
     public static void main(String[] args) {
         // Sample input
-        Trade[] trades = {
-                new Trade("trade3", 500),
-                new Trade("trade1", 100),
-                new Trade("trade2", 300)
+        Asset[] assets = {
+                new Asset("AAPL", 12.0, 0.25),
+                new Asset("TSLA", 8.0, 0.40),
+                new Asset("GOOG", 15.0, 0.20)
         };
 
         // Merge Sort ascending
-        Trade[] mergeSorted = trades.clone();
+        Asset[] mergeSorted = assets.clone();
         mergeSort(mergeSorted, 0, mergeSorted.length - 1);
-        System.out.println("MergeSort: " + Arrays.toString(mergeSorted) + " // Stable");
+        System.out.println("Merge: " + Arrays.toString(mergeSorted));
 
         // Quick Sort descending
-        Trade[] quickSorted = trades.clone();
+        Asset[] quickSorted = assets.clone();
         quickSort(quickSorted, 0, quickSorted.length - 1);
-        System.out.println("QuickSort (desc): " + Arrays.toString(quickSorted) + " // Pivot: last element");
-
-        // Merge two sorted lists (morning + afternoon)
-        Trade[] morning = { new Trade("m1", 200), new Trade("m2", 400) };
-        Trade[] afternoon = { new Trade("a1", 300), new Trade("a2", 500) };
-        Trade[] merged = mergeTwoLists(morning, afternoon);
-        System.out.println("Merged morning+afternoon: " + Arrays.toString(merged));
-
-        // Compute total volume
-        System.out.println("Total volume: " + computeTotal(merged));
+        System.out.println("Quick (desc): " + Arrays.toString(quickSorted));
     }
 }
